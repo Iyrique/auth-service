@@ -13,21 +13,21 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// Подключение к БД
+	// DB connection
 	db := repository.NewPostgresDB(
 		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 	defer db.Close()
 
-	// Инициализация репозитория, сервиса и хендлеров
+	// Init repository, service, handler
 	repo := repository.NewPostgresRepository(db)
 	tokenService := service.NewTokenService(repo, cfg.JWTSecret, cfg.WebhookURL)
 	handler := handler.NewHandler(tokenService)
 
-	// Регистрация маршрутов
+	// Register routes
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 
-	// Запуск HTTP-сервера
+	// Start server
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Server running on %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {

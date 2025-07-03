@@ -41,7 +41,7 @@ func (s *TokenService) GenerateRefreshToken(userID, userAgent, ip string) (strin
 	hash := sha512.Sum512([]byte(raw))
 	token := base64.StdEncoding.EncodeToString(hash[:])
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
+	hashed, err := bcrypt.GenerateFromPassword(hash[:], bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
@@ -55,7 +55,12 @@ func (s *TokenService) RefreshTokens(userID, refreshToken, userAgent, ip string)
 		return "", "", errors.New("refresh token invalid or used")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(stored.TokenHash), []byte(refreshToken)); err != nil {
+	decoded, err := base64.StdEncoding.DecodeString(refreshToken)
+	if err != nil {
+		return "", "", errors.New("invalid refresh token encoding")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(stored.TokenHash), decoded); err != nil {
 		_ = s.repo.InvalidateToken(userID)
 		return "", "", errors.New("invalid refresh token")
 	}
